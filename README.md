@@ -1,4 +1,4 @@
-# LOOP — AI Customer-Feedback Intelligence Platform
+#(RAHUL) LOOP — AI Customer-Feedback Intelligence Platform
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.35-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
