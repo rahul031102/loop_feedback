@@ -1,0 +1,204 @@
+// Project LOOP — Prisma schema
+//
+// Implements the minimum entity set required by Section 07 (Data Model) of
+// the Project LOOP brief: Workspace, User, Feedback, Theme, FeedbackTheme,
+// Embedding, Report. Every tenant-owned table carries a workspaceId foreign
+// key, per the brief's non-negotiable security rule (Section 06): a query
+// that omits it is a bug, not a style choice.
+//
+// Prisma ORM 7 is Rust-free: PrismaClient is constructed with a driver
+// adapter (@prisma/adapter-pg) rather than a downloaded native engine — see
+// lib/db.ts. This has no effect on the schema itself.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+/// Feedback source. Section 02.1 names support tickets, app-store reviews,
+/// NPS/CSAT surveys, sales call notes, and social/community mentions as the
+/// channels a mid-size SaaS company receives feedback through in a single
+/// week — these are exactly those, kept as an enum (rather than free text)
+/// so filtering/grouping in the inbox and dashboard (C4, C5) stays exact.
+enum Channel {
+  SUPPORT_TICKET
+  APP_STORE_REVIEW
+  NPS_SURVEY
+  CSAT_SURVEY
+  SALES_CALL_NOTE
+  COMMUNITY_POST
+  SOCIAL_MENTION
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  ACTIONED
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy root
+// ---------------------------------------------------------------------------
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users    User[]
+  feedback Feedback[]
+  themes   Theme[]
+  reports  Report[]
+
+  @@map("workspaces")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access (C1, C2)
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  reportsGenerated Report[] @relation("ReportGeneratedBy")
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Feedback & AI intelligence (C3, C4, C5, AI1, AI2, AI3)
+// ---------------------------------------------------------------------------
+
+model Feedback {
+  id             String         @id @default(cuid())
+  content        String
+  channel        Channel
+  sourceRef      String?
+  customerLabel  String?
+  sentiment      Sentiment?
+  sentimentScore Float?
+  featureArea    String?
+  status         FeedbackStatus @default(NEW)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  feedbackThemes FeedbackTheme[]
+  embedding      Embedding?
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, channel])
+  @@index([workspaceId, createdAt])
+  @@map("feedback")
+}
+
+model Theme {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#B8722E")
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  feedbackThemes FeedbackTheme[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("themes")
+}
+
+/// Feedback <-> Theme join table (Section 07: "FeedbackTheme (join)").
+model FeedbackTheme {
+  feedbackId String
+  themeId    String
+  confidence Float  @default(1.0)
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  theme    Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([feedbackId, themeId])
+  @@index([themeId])
+  @@map("feedback_themes")
+}
+
+/// One embedding vector per feedback item, used by Ask LOOP (AI3) for
+/// semantic retrieval — see Section 09.2. Populated starting in Milestone 3
+/// (lib/services/search.service.ts); the schema entity exists now because
+/// Section 07 defines it as part of the minimum data model. `vector` is
+/// `Unsupported` because Prisma's query builder has no pgvector-native API —
+/// reads/writes for this column go through $queryRaw/$executeRaw once M3
+/// implements retrieval. Dimension 1536 is a placeholder matching common
+/// embedding models; confirmed against the actual embeddings provider when
+/// M3 wires it up (see the Assumptions section — that provider choice is
+/// deliberately deferred, not guessed at now).
+/// One embedding vector per feedback item, used by Ask LOOP (AI3) for
+/// semantic retrieval - see Section 09.2. Populated in Milestone 3 by
+/// lib/services/search.service.ts. `vector` is `Unsupported` because
+/// Prisma's query builder has no pgvector-native API - reads/writes for
+/// this column go through raw SQL. Dimension 1024 matches Voyage AI's
+/// default output size (voyage-4 family) - Anthropic's own documented
+/// recommendation for Claude apps, since Claude has no native embedding
+/// model.
+model Embedding {
+  id         String                      @id @default(cuid())
+  feedbackId String                      @unique
+  vector     Unsupported("vector(1024)")
+  createdAt  DateTime                    @default(now())
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@map("embeddings")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  title       String
+  periodStart DateTime
+  periodEnd   DateTime
+  contentJson Json
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  generatedById String
+  generatedBy   User   @relation("ReportGeneratedBy", fields: [generatedById], references: [id])
+
+  @@index([workspaceId])
+  @@map("reports")
+}

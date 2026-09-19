@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-base text-fg;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Ambient backdrop: a faint grid plus two soft color blobs, fixed behind
+     every screen so the whole product reads as one continuous surface
+     rather than a page-by-page background color. Kept subtle on purpose —
+     this sits behind data-dense tables and charts as much as the login
+     hero, so it must never compete with content. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 40%, transparent 100%);
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(
+        ellipse 60% 45% at 12% -8%,
+        rgba(76, 125, 255, 0.16),
+        transparent 60%
+      ),
+      radial-gradient(ellipse 55% 40% at 100% 8%, rgba(139, 92, 246, 0.13), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 50% 105%, rgba(45, 212, 191, 0.08), transparent 60%);
+  }
+
+  ::selection {
+    @apply bg-primary/25;
+  }
+
+  /* Thin, dark scrollbar consistent with the rest of the UI (Firefox +
+     WebKit). Falls back to the OS default anywhere neither applies. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+  }
+}
+
+@layer components {
+  /* Small uppercase, letter-spaced pill used for status/sentiment/channel
+     labels — reads like an instrument-panel label rather than a soft
+     consumer-app chip, per the design direction. */
+  .label-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide;
+  }
+
+  /* The one glass surface recipe every card/panel/dropdown in the product
+     is built from, so "glassmorphism used carefully, not excessively"
+     stays true by construction — one considered recipe, reused, rather
+     than every component reinventing its own blur/opacity/border values. */
+  .glass {
+    @apply border border-border bg-base-2/70 backdrop-blur-xl;
+  }
+  .glass-2 {
+    @apply border border-border bg-base-3/70 backdrop-blur-xl;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* AI4 AC3 ("exportable... PDF"): the report detail page's Print button
+   triggers the browser's native print-to-PDF. `.no-print` hides UI chrome
+   (sidebar, nav, the print button itself) so only the report content ends
+   up in the PDF. Printed output stays light/paper-toned regardless of the
+   product's dark theme — nobody wants a black-ink-guzzling PDF. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  body::before,
+  body::after {
+    background: white !important;
+  }
+
+  .report-print {
+    max-width: 100%;
+    color: black;
+  }
+}

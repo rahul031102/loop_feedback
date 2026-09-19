@@ -1,0 +1,49 @@
+{
+  "name": "loop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LOOP — AI Customer-Feedback Intelligence Platform (Zidio Internship, Project LOOP brief v1.0)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@prisma/client": "7.9.1",
+    "@prisma/adapter-pg": "7.9.1",
+    "next-auth": "4.24.8",
+    "bcryptjs": "2.4.3",
+    "zod": "3.25.76",
+    "clsx": "2.1.1",
+    "tailwind-merge": "2.5.4",
+    "lucide-react": "0.454.0",
+    "recharts": "2.13.3",
+    "papaparse": "5.4.1",
+    "@anthropic-ai/sdk": "0.116.0",
+    "dotenv": "16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "@types/node": "20.16.11",
+    "@types/react": "18.3.11",
+    "@types/react-dom": "18.3.0",
+    "@types/bcryptjs": "2.4.6",
+    "@types/papaparse": "5.3.15",
+    "prisma": "7.9.1",
+    "tsx": "4.19.1",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.35",
+    "tailwindcss": "3.4.13",
+    "postcss": "8.4.47",
+    "autoprefixer": "10.4.20",
+    "prettier": "3.3.3",
+    "prettier-plugin-tailwindcss": "0.6.8"
+  }
+}
