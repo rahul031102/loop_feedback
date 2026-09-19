@@ -1,6 +1,3 @@
-import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/labels";
 import { Role } from "@prisma/client";
 
@@ -87,11 +84,6 @@ const roleDotColor: Record<Role, string> = {
 };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
-  if (session) {
-    redirect("/inbox");
-  }
-
   return (
     <div className="flex min-h-screen">
       {/* Marketing panel — desktop only. The real page content (login /
